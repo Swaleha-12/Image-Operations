@@ -29,7 +29,7 @@ Grading will be as per the criteria specified in the accompanying file, _rubric.
 
 ## Submission
 
-There are 3 parts to this assignment.
+There are 3 parts to this assignment. LAck of submission of any one part will result in loss of marks.
 
 ### 1.1 Solving the Problem Set
 
