@@ -1,5 +1,6 @@
 from PIL import Image
 import array as arr
+import copy
 
 
 class MyListIterator:
@@ -261,7 +262,7 @@ def remove_channel(src: MyImage, red: bool = False, green: bool = False,
     Returns:
     a copy of src with the indicated channels suppressed.
     """
-    locimage: MyImage = src
+    locimage: MyImage = copy.deepcopy(src)
     for i in range(locimage.size[0]*locimage.size[1]):
         pixel = locimage.pixels[i]
         if(red):
@@ -271,13 +272,15 @@ def remove_channel(src: MyImage, red: bool = False, green: bool = False,
         if(blue):
             pixel = pixel[:2] + (0,)
         locimage.pixels.set(i, pixel)
+    src.show()
     locimage.save("images/newimage.jpeg")
-    locimage.show()
+    return locimage
 
 
 myimage = MyImage((389, 548))
 myimage = myimage.open("images/campus.jpeg")
-remove_channel(myimage, red=True, green=True)
+newimage: MyImage = remove_channel(myimage, blue=True)
+newimage.show()
 
 
 def rotations(src: MyImage) -> MyImage:
