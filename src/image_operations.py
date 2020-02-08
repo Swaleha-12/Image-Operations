@@ -1,6 +1,5 @@
 from PIL import Image
 import array as arr
-import copy
 
 
 class MyListIterator:
@@ -8,9 +7,12 @@ class MyListIterator:
     https://thispointer.com/python-how-to-make-a-class-iterable-create-iterator-class-for-it/
     '''
 
-    def __init__(self, lst):
+    def __init__(self, lst, pointer=False):
         # MyList object reference
-        self._lst: ArrayList = lst
+        if pointer:
+            self._lst: PointerList = lst
+        else:
+            self._lst: ArrayList = lst
         # member variable to keep track of current index
         self._index: int = 0
 
@@ -23,13 +25,15 @@ class MyListIterator:
         # End of Iteration
         raise StopIteration
 
+
 class Node:
     def __init__(self, data) -> None:
         self.data = data
         self.next = None
 
+
 class PointerList:
-    def __init__(self, size: int, value = None) -> None:
+    def __init__(self, size: int, value=None) -> None:
         """Creates a list of the given size, optionally intializing elements to value.
         The list is static. It only has space for size elements.
 
@@ -41,12 +45,12 @@ class PointerList:
         none
         """
         self.size = size
-        self.head = Node(value) #head for the linkedlist
-        temp: Node = self.head #temporary node for iteration
+        self.head = Node(value)  # head for the linkedlist
+        temp: Node = self.head  # temporary node for iteration
         for _ in range(size):
-            NewNode = Node(value) #new node to be added to the list
-            temp.next = NewNode 
-            temp = NewNode #new node becomes the temporary node 
+            NewNode = Node(value)  # new node to be added to the list
+            temp.next = NewNode
+            temp = NewNode  # new node becomes the temporary node
 
     def __len__(self) -> int:
         '''Returns the size of the list. Allows len() to be called on it.
@@ -98,6 +102,7 @@ class PointerList:
         for _ in range(i):
             temp = temp.next
         temp.data = value
+
     def __iter__(self) -> MyListIterator:
         '''Returns an iterator that allows iteration over this list.
 
@@ -108,7 +113,7 @@ class PointerList:
         Returns:
         an iterator that allows iteration over this list.
         '''
-        return MyListIterator(self)
+        return MyListIterator(self, True)
 
     def get(self, i: int):
         '''Returns the value at index, i.
@@ -248,6 +253,7 @@ class ArrayList:
 class MyImage:
     """ Holds a flattened RGB image and its dimensions.
     """
+
     def __init__(self, size: (int, int), pointer=False) -> None:
         """Initializes a black image of the given size.
 
@@ -258,13 +264,13 @@ class MyImage:
         none
         """
         # Save size, create a list of the desired size with black pixels.
+        self.pointer = pointer
         width, height = self.size = size
         if pointer:
-            self.pixels: PointerList = PointerList(width * height, value=(0, 0, 0))
-            print("pointer List")
+            self.pixels: PointerList = PointerList(
+                width * height, value=(0, 0, 0))
         else:
             self.pixels: ArrayList = ArrayList(width * height, value=(0, 0, 0))
-            print("array list")
 
     def _get_index(self, r: int, c: int) -> int:
         """Returns the list index for the given row, column coordinates.
@@ -285,7 +291,7 @@ class MyImage:
             f"(r, c): ({r}, {c}) for image of size: {self.size}"
         return r*width + c
 
-    def open(self, path: str, pointer = False):
+    def open(path: str, pointer=False):
         """Creates and returns an image containing from the information at file path.
 
         The image format is inferred from the file name. The read image is
@@ -299,7 +305,7 @@ class MyImage:
         """
         # Use PIL to read the image information and store it in our instance.
         img: PIL.Image = Image.open(path)
-        myimg: MyImage = MyImage(img.size,pointer)
+        myimg: MyImage = MyImage(img.size, pointer)
         width, height = img.size
         # Covert image to RGB. https://stackoverflow.com/a/11064935/1382487
         img: PIL.Image = img.convert('RGB')
@@ -379,18 +385,20 @@ def remove_channel(src: MyImage, red: bool = False, green: bool = False,
     Returns:
     a copy of src with the indicated channels suppressed.
     """
-    localImage: MyImage = copy.deepcopy(src)
-    for i in range(localImage.size[0]*localImage.size[1]):
-        pixel = localImage.pixels[i]
-        if(red):
-            pixel = (0,) + pixel[1:]
-        if(green):
-            pixel = pixel[:1] + (0,) + pixel[2:]
-        if(blue):
-            pixel = pixel[:2] + (0,)
-        localImage.pixels.set(i, pixel)
-    localImage.save("images/newimage.jpeg")
+    localImage = MyImage(src.size, src.pointer)
+
+    for i in range(src.size[1]):
+        for j in range(src.size[0]):
+            pixel = src.get(i, j)
+            if red or not (green or blue):
+                pixel = (0, pixel[1], pixel[2])
+            if green:
+                pixel = (pixel[0], 0, pixel[2])
+            if blue:
+                pixel = (pixel[0], pixel[1], 0)
+            localImage.set(i, j, pixel)
     return localImage
+
 
 def rotations(src: MyImage) -> MyImage:
     """Returns an image containing the 4 rotations of src.
@@ -422,61 +430,69 @@ def apply_mask(src: MyImage, maskfile: str, average: bool = True) -> MyImage:
     Returns:
     an image which the result of applying the specified mask to src.
     """
-    mask,dimension = openfile(maskfile)
+    mask, dimension = openfile(maskfile)
     avg = 0
-    LocalImage: MyImage = copy.deepcopy(src) #makes a local copy of the given MyImage object
-    width,height = LocalImage.size
+    # makes a local copy of the given MyImage object
+    LocalImage = MyImage(src.size, src.pointer)
+    width, height = src.size
     for i in range(height):
-        for j in range(width): 
-            pixel = src.get(i,j)
-            pixel = mask[dimension//2][dimension//2]*(pixel[0]+pixel[1]+pixel[2])//3
-            avg+=mask[dimension//2][dimension//2]
-            for k in range(1,dimension//2 + 1):
+        for j in range(width):
+            pixel = src.get(i, j)
+            pixel = mask[dimension//2][dimension//2] * \
+                (pixel[0]+pixel[1]+pixel[2])//3
+            avg += mask[dimension//2][dimension//2]
+            for k in range(1, dimension//2 + 1):
                 if j+k < width:
-                    temp = src.get(i,j+k)
-                    temp = mask[dimension//2][dimension//2 + k]*(temp[0]+temp[1]+temp[2])//3
-                    avg+=mask[dimension//2][dimension//2+k]
-                    pixel+=temp
+                    temp = src.get(i, j+k)
+                    temp = mask[dimension//2][dimension//2 + k] * \
+                        (temp[0]+temp[1]+temp[2])//3
+                    avg += mask[dimension//2][dimension//2+k]
+                    pixel += temp
                 if j-k > -1:
-                    temp = src.get(i,j-k)
-                    temp = mask[dimension//2][dimension//2 - k]*(temp[0]+temp[1]+temp[2])//3
-                    avg+=mask[dimension//2][dimension//2-k]
-                    pixel+=temp
-                for l in range(1,dimension//2 + 1):
+                    temp = src.get(i, j-k)
+                    temp = mask[dimension//2][dimension//2 - k] * \
+                        (temp[0]+temp[1]+temp[2])//3
+                    avg += mask[dimension//2][dimension//2-k]
+                    pixel += temp
+                for l in range(1, dimension//2 + 1):
                     if i+k < height and j+l < width:
-                        temp = src.get(i+k,j+l)
-                        temp = mask[dimension//2 + k][dimension//2 + l]*(temp[0]+temp[1]+temp[2])//3
-                        avg+=mask[dimension//2 + k][dimension//2 + l]
-                        pixel+=temp
+                        temp = src.get(i+k, j+l)
+                        temp = mask[dimension//2 + k][dimension //
+                                                      2 + l]*(temp[0]+temp[1]+temp[2])//3
+                        avg += mask[dimension//2 + k][dimension//2 + l]
+                        pixel += temp
                     if i-k > -1 and j+l < width:
-                        temp = src.get(i-k,j+l)
-                        temp = mask[dimension//2 - k][dimension//2 + l]*(temp[0]+temp[1]+temp[2])//3
-                        avg+=mask[dimension//2 - k][dimension//2 + l]
-                        pixel+=temp
+                        temp = src.get(i-k, j+l)
+                        temp = mask[dimension//2 - k][dimension //
+                                                      2 + l]*(temp[0]+temp[1]+temp[2])//3
+                        avg += mask[dimension//2 - k][dimension//2 + l]
+                        pixel += temp
                     if i+k < height and j-l > -1:
-                        temp = src.get(i+k,j-l)
-                        temp = mask[dimension//2 + k][dimension//2 - l]*(temp[0]+temp[1]+temp[2])//3
-                        avg+=mask[dimension//2 + k][dimension//2 - l]
-                        pixel+=temp
+                        temp = src.get(i+k, j-l)
+                        temp = mask[dimension//2 + k][dimension //
+                                                      2 - l]*(temp[0]+temp[1]+temp[2])//3
+                        avg += mask[dimension//2 + k][dimension//2 - l]
+                        pixel += temp
                     if i-k > -1 and j-l > -1:
-                        temp = src.get(i-k,j-l)
-                        temp = mask[dimension//2 - k][dimension//2 - l]*(temp[0]+temp[1]+temp[2])//3
-                        avg+=mask[dimension//2 - k][dimension//2 - l]
-                        pixel+=temp
+                        temp = src.get(i-k, j-l)
+                        temp = mask[dimension//2 - k][dimension //
+                                                      2 - l]*(temp[0]+temp[1]+temp[2])//3
+                        avg += mask[dimension//2 - k][dimension//2 - l]
+                        pixel += temp
             if average:
                 pixel = pixel // avg
                 avg = 0
-            LocalImage.set(i,j,(pixel,pixel,pixel))
-    LocalImage.save("images/newimage.jpeg")
+            LocalImage.set(i, j, (pixel, pixel, pixel))
+    # LocalImage.save("newimage.jpeg")
     return LocalImage
+
+
 def openfile(maskfile):
-    maskfile = open(maskfile, 'r') #open the given file for reading
-    dimension = int(maskfile.readline()) #reads the dimension of the mask
-    mask = [[int(maskfile.readline()) for _ in range(dimension)] for _ in range(dimension)]
-    return (mask,dimension)
+    maskfile = open(maskfile, 'r')  # open the given file for reading
+    dimension = int(maskfile.readline())  # reads the dimension of the mask
+    mask = [[int(maskfile.readline()) for _ in range(dimension)]
+            for _ in range(dimension)]
+    return (mask, dimension)
 
 
-myimage = MyImage((389, 548))
-myimage = myimage.open("images/campus.jpeg")
-newimage: MyImage = apply_mask(myimage,"masks/mask-blur.txt")
-newimage.show()
+# newimage: MyImage = MyImage.open("campus.jpeg")
