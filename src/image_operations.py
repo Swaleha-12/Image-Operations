@@ -1,5 +1,6 @@
 from PIL import Image
 import array as arr
+import copy
 
 
 class MyListIterator:
@@ -79,7 +80,7 @@ class PointerList:
         assert 0 <= i < len(self),\
             f'Getting invalid list index {i} from list of size {len(self)}'
         temp: Node = self.head
-        for _ in range(i):
+        for _ in range(i):  # traverse till i and return the current node
             temp = temp.next
         return (temp.data)
 
@@ -159,9 +160,13 @@ class ArrayList:
         none
         """
         self.size = size
-        self.ArrayRed = arr.array('i', [value[0] for i in range(size)])
-        self.ArrayGreen = arr.array('i', [value[1] for i in range(size)])
-        self.ArrayBlue = arr.array('i', [value[2] for i in range(size)])
+        self.ArrayRed = arr.array('i', [])
+        self.ArrayGreen = arr.array('i', [])
+        self.ArrayBlue = arr.array('i', [])
+        for _ in range(size):
+            self.ArrayRed.append(value[0])
+            self.ArrayGreen.append(value[1])
+            self.ArrayBlue.append(value[2])
 
     def __len__(self) -> int:
         '''Returns the size of the list. Allows len() to be called on it.
@@ -411,7 +416,36 @@ def rotations(src: MyImage) -> MyImage:
     Returns:
     an image twice the size of src and containing the 4 rotations of src.
     """
-    pass
+    result = MyImage((src.size[0]*2, src.size[1]*2), src.pointer)
+    rotated: MyImage = degrees90(src)
+    for count in range(4):
+        for i in range(src.size[0]):
+            for j in range(src.size[1]):
+                x = rotated.get(i, j)
+                if count == 0:
+                    result.set(i, j, x)
+                elif count == 1:
+                    result.set(i+src.size[1], j, x)
+                elif count == 2:
+                    result.set(i+src.size[1], j+src.size[1], x)
+                elif count == 3:
+                    result.set(i, j+src.size[1], x)
+        if count < 3:
+            rotated = degrees90(rotated)
+    src.show()
+    return result
+
+
+def degrees90(locimage: MyImage) -> MyImage:
+    n = locimage.size[0]
+    for x in range(0, int(n/2)):
+        for y in range(x, n-x-1):
+            temp = locimage.get(x, y)
+            locimage.set(x, y, locimage.get(y, n-1-x))
+            locimage.set(y, n-1-x, locimage.get(n-1-x, n-1-y))
+            locimage.set(n-1-x, n-1-y, locimage.get(n-1-y, x))
+            locimage.set(n-1-y, x, temp)
+    return locimage
 
 
 def apply_mask(src: MyImage, maskfile: str, average: bool = True) -> MyImage:
@@ -438,45 +472,42 @@ def apply_mask(src: MyImage, maskfile: str, average: bool = True) -> MyImage:
     for i in range(height):
         for j in range(width):
             pixel = src.get(i, j)
-            pixel = mask[dimension//2][dimension//2] * \
-                (pixel[0]+pixel[1]+pixel[2])//3
+            pixel = mask[dimension//2][dimension//2] * sum(pixel)//3
             avg += mask[dimension//2][dimension//2]
             for k in range(1, dimension//2 + 1):
                 if j+k < width:
                     temp = src.get(i, j+k)
-                    temp = mask[dimension//2][dimension//2 + k] * \
-                        (temp[0]+temp[1]+temp[2])//3
+                    temp = mask[dimension//2][dimension//2 + k] * sum(temp)//3
                     avg += mask[dimension//2][dimension//2+k]
                     pixel += temp
                 if j-k > -1:
                     temp = src.get(i, j-k)
-                    temp = mask[dimension//2][dimension//2 - k] * \
-                        (temp[0]+temp[1]+temp[2])//3
+                    temp = mask[dimension//2][dimension//2 - k] * sum(temp)//3
                     avg += mask[dimension//2][dimension//2-k]
                     pixel += temp
                 for l in range(1, dimension//2 + 1):
                     if i+k < height and j+l < width:
                         temp = src.get(i+k, j+l)
-                        temp = mask[dimension//2 + k][dimension //
-                                                      2 + l]*(temp[0]+temp[1]+temp[2])//3
+                        temp = mask[dimension//2 +
+                                    k][dimension//2 + l]*sum(temp)//3
                         avg += mask[dimension//2 + k][dimension//2 + l]
                         pixel += temp
                     if i-k > -1 and j+l < width:
                         temp = src.get(i-k, j+l)
-                        temp = mask[dimension//2 - k][dimension //
-                                                      2 + l]*(temp[0]+temp[1]+temp[2])//3
+                        temp = mask[dimension//2 -
+                                    k][dimension//2 + l]*sum(temp)//3
                         avg += mask[dimension//2 - k][dimension//2 + l]
                         pixel += temp
                     if i+k < height and j-l > -1:
                         temp = src.get(i+k, j-l)
-                        temp = mask[dimension//2 + k][dimension //
-                                                      2 - l]*(temp[0]+temp[1]+temp[2])//3
+                        temp = mask[dimension//2 +
+                                    k][dimension // 2 - l]*sum(temp)//3
                         avg += mask[dimension//2 + k][dimension//2 - l]
                         pixel += temp
                     if i-k > -1 and j-l > -1:
                         temp = src.get(i-k, j-l)
-                        temp = mask[dimension//2 - k][dimension //
-                                                      2 - l]*(temp[0]+temp[1]+temp[2])//3
+                        temp = mask[dimension//2 -
+                                    k][dimension // 2 - l]*sum(temp)//3
                         avg += mask[dimension//2 - k][dimension//2 - l]
                         pixel += temp
             if average:
@@ -495,4 +526,6 @@ def openfile(maskfile):
     return (mask, dimension)
 
 
-# newimage: MyImage = MyImage.open("campus.jpeg")
+newimage: MyImage = MyImage.open("cs-logo.PNG")
+newimage = rotations(newimage)
+newimage.show()
