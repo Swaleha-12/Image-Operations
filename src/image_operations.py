@@ -432,7 +432,6 @@ def rotations(src: MyImage) -> MyImage:
                     result.set(i, j+src.size[1], x)
         if count < 3:
             rotated = degrees90(rotated)
-    src.show()
     return result
 
 
@@ -472,47 +471,61 @@ def apply_mask(src: MyImage, maskfile: str, average: bool = True) -> MyImage:
     for i in range(height):
         for j in range(width):
             pixel = src.get(i, j)
-            pixel = mask[dimension//2][dimension//2] * sum(pixel)//3
+            print(src.pixels[i*width+j])
+            pixel = mask[dimension//2][dimension//2] * (sum(pixel)//3)
             avg += mask[dimension//2][dimension//2]
             for k in range(1, dimension//2 + 1):
                 if j+k < width:
                     temp = src.get(i, j+k)
-                    temp = mask[dimension//2][dimension//2 + k] * sum(temp)//3
+                    temp = mask[dimension//2][dimension //
+                                              2 + k] * (sum(temp)//3)
                     avg += mask[dimension//2][dimension//2+k]
                     pixel += temp
                 if j-k > -1:
                     temp = src.get(i, j-k)
-                    temp = mask[dimension//2][dimension//2 - k] * sum(temp)//3
+                    temp = mask[dimension//2][dimension //
+                                              2 - k] * (sum(temp)//3)
                     avg += mask[dimension//2][dimension//2-k]
+                    pixel += temp
+                if i+k < height:
+                    temp = src.get(i+k, j)
+                    temp = mask[dimension//2+k][dimension//2] * (sum(temp)//3)
+                    avg += mask[dimension//2+k][dimension//2]
+                    pixel += temp
+                if i-k > -1:
+                    temp = src.get(i-k, j)
+                    temp = mask[dimension//2-k][dimension//2] * (sum(temp)//3)
+                    avg += mask[dimension//2-k][dimension//2]
                     pixel += temp
                 for l in range(1, dimension//2 + 1):
                     if i+k < height and j+l < width:
                         temp = src.get(i+k, j+l)
                         temp = mask[dimension//2 +
-                                    k][dimension//2 + l]*sum(temp)//3
+                                    k][dimension//2 + l] * (sum(temp)//3)
                         avg += mask[dimension//2 + k][dimension//2 + l]
                         pixel += temp
                     if i-k > -1 and j+l < width:
                         temp = src.get(i-k, j+l)
                         temp = mask[dimension//2 -
-                                    k][dimension//2 + l]*sum(temp)//3
+                                    k][dimension//2 + l] * (sum(temp)//3)
                         avg += mask[dimension//2 - k][dimension//2 + l]
                         pixel += temp
                     if i+k < height and j-l > -1:
                         temp = src.get(i+k, j-l)
                         temp = mask[dimension//2 +
-                                    k][dimension // 2 - l]*sum(temp)//3
+                                    k][dimension // 2 - l] * (sum(temp)//3)
                         avg += mask[dimension//2 + k][dimension//2 - l]
                         pixel += temp
                     if i-k > -1 and j-l > -1:
                         temp = src.get(i-k, j-l)
                         temp = mask[dimension//2 -
-                                    k][dimension // 2 - l]*sum(temp)//3
+                                    k][dimension // 2 - l] * (sum(temp)//3)
                         avg += mask[dimension//2 - k][dimension//2 - l]
                         pixel += temp
             if average:
                 pixel = pixel // avg
                 avg = 0
+            pixel = min(max(0, pixel), 255)
             LocalImage.set(i, j, (pixel, pixel, pixel))
     # LocalImage.save("newimage.jpeg")
     return LocalImage
@@ -526,6 +539,6 @@ def openfile(maskfile):
     return (mask, dimension)
 
 
-newimage: MyImage = MyImage.open("cs-logo.PNG")
-newimage = rotations(newimage)
-newimage.show()
+# newimage: MyImage = MyImage.open("images/campus.jpeg")
+# newimage = apply_mask(newimage, "masks/mask-blur-more.txt")
+# newimage.show()
