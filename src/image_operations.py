@@ -332,16 +332,15 @@ def remove_channel(src: MyImage, red: bool = False, green: bool = False,
     localImage = MyImage(src.size, src.pointer) #creating a new image so as to keep the 
                                                 #original image intact
 
-    for i in range(src.size[1]):
-        for j in range(src.size[0]):
-            pixel = src.get(i, j)
-            if red or not (green or blue):
-                pixel = (0, pixel[1], pixel[2])     #suppressing the red channel
-            if green:
-                pixel = (pixel[0], 0, pixel[2])     #suppressing the green channel
-            if blue:
-                pixel = (pixel[0], pixel[1], 0)     #suppressing the blue channel
-            localImage.set(i, j, pixel)
+    for pixel in src.pixels: #using the iterator provided in our class implementation
+        if red or not (green or blue): # if no channel is indicated then suppress the red
+            pixel = (0, pixel[1], pixel[2]) #suppressing the red channel
+        if green:
+            pixel = (pixel[0], 0, pixel[2]) #suppressing the green channel
+        if blue:
+            pixel = (pixel[0], pixel[1], 0) #suppressing the blue channel
+        localImage.pixels.set(i, pixel)
+        i += 1 #iterator for our local image
     return localImage
 
 
@@ -354,11 +353,11 @@ def rotations(src: MyImage) -> MyImage:
     an image twice the size of src and containing the 4 rotations of src.
     """
     result = MyImage((src.size[0]*2, src.size[1]*2), src.pointer)   #creating an image twice the original size
-    rotated: MyImage = degrees90(src)
+    rotated: MyImage = degrees90(src) # rotating 90 degrees for the first time
     for count in range(4):
         for i in range(src.size[0]):
             for j in range(src.size[1]):
-                x = rotated.get(i, j)
+                x = rotated.get(i, j)                           #get the pixel from the rotated image
                 if count == 0:
                     result.set(i, j, x)                         #set the pixels on top left
                 elif count == 1:
@@ -397,22 +396,23 @@ def apply_mask(src: MyImage, maskfile: str, average: bool = True) -> MyImage:
     Returns:
     an image which the result of applying the specified mask to src.
     """
-    mask, dimension = openfile(maskfile)
+    mask, dimension = openfile(maskfile) #the function returns mask as 2D list and dimension of the mask as a tuple
     avg = 0
     # makes a local copy of the given MyImage object
-    LocalImage = MyImage(src.size, src.pointer)
-    width, height = src.size
-    for i in range(height):
+    LocalImage = MyImage(src.size, src.pointer) # creating our object of MyImage
+    width, height = src.size 
+    for i in range(height): 
         for j in range(width):
+            # traverse over each pixel on our src image
             pixel = src.get(i, j)
-            print(src.pixels[i*width+j])
-            pixel = mask[dimension//2][dimension//2] * (sum(pixel)//3)
-            avg += mask[dimension//2][dimension//2]
+            pixel = mask[dimension//2][dimension//2] * (sum(pixel)//3) #multiply the middle element of our mask with our current pixel
+            avg += mask[dimension//2][dimension//2] #summing the weights for average
             for k in range(1, dimension//2 + 1):
+                #loop to traverse over the middle row and column of the mask and the corresponding pixel
                 if j+k < width:
-                    temp = src.get(i, j+k)
+                    temp = src.get(i, j+k) #variable to store the neighbouring pixels
                     temp = mask[dimension//2][dimension //
-                                              2 + k] * (sum(temp)//3)
+                                              2 + k] * (sum(temp)//3) #taking the average and then multiplying with the corresponding weight
                     avg += mask[dimension//2][dimension//2+k]
                     pixel += temp
                 if j-k > -1:
@@ -432,6 +432,7 @@ def apply_mask(src: MyImage, maskfile: str, average: bool = True) -> MyImage:
                     avg += mask[dimension//2-k][dimension//2]
                     pixel += temp
                 for l in range(1, dimension//2 + 1):
+                    #loop to traverse over the rest of the mask and the corresponding pixels
                     if i+k < height and j+l < width:
                         temp = src.get(i+k, j+l)
                         temp = mask[dimension//2 +
@@ -456,19 +457,18 @@ def apply_mask(src: MyImage, maskfile: str, average: bool = True) -> MyImage:
                                     k][dimension // 2 - l] * (sum(temp)//3)
                         avg += mask[dimension//2 - k][dimension//2 - l]
                         pixel += temp
-            if average:
-                pixel = pixel // avg
+            if average: #condition to check whether average is required or not
+                pixel = pixel // avg 
                 avg = 0
-            pixel = min(max(0, pixel), 255)
-            LocalImage.set(i, j, (pixel, pixel, pixel))
-    # LocalImage.save("newimage.jpeg")
+            pixel = min(max(0, pixel), 255) # to make sure that our pixel value does not exceed 255
+            LocalImage.set(i, j, (pixel, pixel, pixel)) #writing the pixel onto our image
     return LocalImage
 
 
 def openfile(maskfile):
     maskfile = open(maskfile, 'r')  # open the given file for reading
     dimension = int(maskfile.readline())  # reads the dimension of the mask
-    mask = [[int(maskfile.readline()) for _ in range(dimension)]
+    mask = [[int(maskfile.readline()) for _ in range(dimension)] #read the mask as a 2D list
             for _ in range(dimension)]
     return (mask, dimension)
 
