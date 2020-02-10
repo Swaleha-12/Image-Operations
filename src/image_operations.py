@@ -329,6 +329,7 @@ def remove_channel(src: MyImage, red: bool = False, green: bool = False,
     Returns:
     a copy of src with the indicated channels suppressed.
     """
+    i = 0 # iterator for writing on our image
     localImage = MyImage(src.size, src.pointer) #creating a new image so as to keep the 
                                                 #original image intact
 
